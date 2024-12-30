@@ -29,10 +29,11 @@ public class CartServiceImpl implements CartService {
 
     @Override
     public CartItem addProductToCart(User user, Product product, Integer quantity) {
-        Cart cart = findUserCard(user);
+        Cart cart = findUserCard(user); // Busca o carrinho do usuário ou cria um novo
 
         CartItem isPresent = cartItemRepository.findByCartIdAndProduct(cart.getId(), product);
         if (isPresent == null) {
+            // Adicionando novo item ao carrinho
             CartItem cartItem = new CartItem();
             cartItem.setProduct(product);
             cartItem.setQuantity(quantity);
@@ -43,19 +44,29 @@ public class CartServiceImpl implements CartService {
             cart.getItems().add(cartItem);
             cartItemRepository.save(cartItem);
         } else {
-            isPresent.setQuantity(isPresent.getQuantity() + quantity);
+            // Atualizando item existente no carrinho
+            int oldQuantity = isPresent.getQuantity();
+            isPresent.setQuantity(oldQuantity + quantity);
             isPresent.setPrice(product.getPrice().multiply(BigDecimal.valueOf(isPresent.getQuantity())));
             cartItemRepository.save(isPresent);
         }
 
-        // Atualiza totais do carrinho
-        cart.updateTotalAmount();
-        cart.setTotalItems(cart.getTotalItems() + quantity);
-        return cartRepository.save(cart).getItems().stream()
+        // Recalcular totais
+        cart.updateTotalAmount(); // Atualiza o totalAmount
+        cart.setTotalItems(cart.getItems().stream()
+                .mapToInt(CartItem::getQuantity)
+                .sum()); // Soma todas as quantidades de itens no carrinho
+
+        // Salvar carrinho atualizado
+        cartRepository.save(cart);
+
+        // Retorna o item atualizado
+        return cart.getItems().stream()
                 .filter(item -> item.getProduct().equals(product))
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("Erro ao atualizar item no carrinho."));
     }
+
 
     @Override
     public Cart findUserCard(User user) {

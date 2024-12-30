@@ -1,6 +1,12 @@
 package impress.weasp.infra.exception;
 
 public class OrderException extends RuntimeException {
-    public OrderException(String string) {
+    public OrderException(String message) {
+        super(message);
+    }
+
+    public OrderException(String message, Throwable cause) {
+        super(message, cause);
     }
 }
+

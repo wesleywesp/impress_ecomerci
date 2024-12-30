@@ -29,6 +29,7 @@ public class Cart {
 
     private int totalItems;
 
+
     @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CartItem> items = new ArrayList<>();
 
@@ -37,13 +38,16 @@ public class Cart {
     public Cart(User user, List<CartItem> items) {
         this.user = user;
         this.items = items;
-        this.totalAmount = BigDecimal.ZERO;
+        this.totalItems = items.size();
+        updateTotalAmount();
     }
 
     public void updateTotalAmount() {
-        this.totalAmount = items.stream()
-                .map(item -> item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        this.totalAmount = this.items.stream()
+                .map(item -> item.getPrice()) // Usa o preço já calculado do item
+                .reduce(BigDecimal.ZERO, BigDecimal::add); // Soma todos os preços
     }
+
+
 }
 

@@ -4,6 +4,7 @@ package impress.weasp.controller;
 
 
 import impress.weasp.controller.dto.Adrress.AddressRequestDTO;
+import impress.weasp.controller.dto.Adrress.AddressResponseDTO;
 import impress.weasp.controller.dto.order.OrderItemResponseDTO;
 import impress.weasp.controller.dto.order.OrderResponse;
 import impress.weasp.controller.dto.order.OrderResponseDTO;
@@ -22,11 +23,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/order")
 @SecurityRequirement(name = "bearer-key")
 @RequiredArgsConstructor
 public class OrderController {
@@ -38,7 +38,7 @@ public class OrderController {
     private final CartService cartService;
 
     @Transactional
-    @PostMapping("/order")
+    @PostMapping
     public ResponseEntity<PaymentLinkResponse> createOrderHandler(
             @RequestBody @Valid AddressRequestDTO addressDto,
             @RequestParam PaymentMethod paymentMethod,
@@ -64,7 +64,7 @@ public class OrderController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/order/user")
+    @GetMapping("/user")
     public ResponseEntity<List<OrderResponseDTO>> getOrderHistory(@RequestHeader("Authorization") String token) {
         String email = jwtTokenProvider.validateToken(token);
         User user = userService.getUserProfile(email);
@@ -72,8 +72,19 @@ public class OrderController {
         List<OrderResponseDTO> response = orderService.userOrderHistory(user.getId()).stream()
                 .map(order -> new OrderResponseDTO(
                         order.getId(),
+                        order.getUser().getEmail(),
                         mapToOrderItemResponse(order.getOrderItems()),
-                        order.getStatus().name(),
+                        order.getStatus(),
+                        order.getPaymentStatus(),
+                        new AddressResponseDTO(
+                                order.getDeliveryAddress().getStreet(),
+                                order.getDeliveryAddress().getNumber(),
+                                order.getDeliveryAddress().getComplement(),
+                                order.getDeliveryAddress().getCity(),
+                                order.getDeliveryAddress().getState(),
+                                order.getDeliveryAddress().getCountry(),
+                                order.getDeliveryAddress().getZipCode()
+                        ),
                         order.getTotalAmount(),
                         order.getCreatedAt()
                 ))
@@ -81,6 +92,7 @@ public class OrderController {
 
         return ResponseEntity.ok(response);
     }
+
 
     @GetMapping("/{orderId}")
     public ResponseEntity<OrderResponseDTO> findOrderById(@PathVariable Long orderId,
@@ -94,6 +106,8 @@ public class OrderController {
                 order.getId(),
                 mapToOrderItemResponse(order.getOrderItems()),
                 order.getStatus().name(),
+                order.getPaymentStatus().name(),
+                mapToAdressResponse(order.getDeliveryAddress()),
                 order.getTotalAmount(),
                 order.getCreatedAt()
         );
@@ -104,12 +118,25 @@ public class OrderController {
 
 
     @GetMapping("/item/{orderItemId}")
-    public ResponseEntity<OrderItem> findOrderItemById(@PathVariable Long orderItemId,
-                                                       @RequestHeader("Authorization") String token) throws CustumerException {
+    public ResponseEntity<OrderItemResponseDTO> findOrderItemById(
+            @PathVariable Long orderItemId,
+            @RequestHeader("Authorization") String token) throws CustumerException {
         String email = jwtTokenProvider.validateToken(token);
         User user = userService.getUserProfile(email);
-        return ResponseEntity.ok(orderService.getOrderItemById(orderItemId));
+
+        OrderItem orderItem = orderService.getOrderItemById(orderItemId);
+
+        // Mapeia para o DTO
+        OrderItemResponseDTO response = new OrderItemResponseDTO(
+                orderItem.getId(),
+                orderItem.getProduct().getName(),
+                orderItem.getPrice(),
+                orderItem.getQuantity()
+        );
+
+        return ResponseEntity.ok(response);
     }
+
     @PostMapping("/{orderId}/cancel")
     public ResponseEntity<OrderResponse> requestCancellation(
             @PathVariable Long orderId,
@@ -125,11 +152,23 @@ public class OrderController {
     private List<OrderItemResponseDTO> mapToOrderItemResponse(List<OrderItem> orderItems) {
         return orderItems.stream()
                 .map(orderItem -> new OrderItemResponseDTO(
+                        orderItem.getId(),
                         orderItem.getProduct().getName(),
                         orderItem.getProduct().getPrice(),
                         orderItem.getQuantity()
                 ))
                 .collect(Collectors.toList());
+    }
+    private AddressResponseDTO mapToAdressResponse(Address addresses){
+        return new AddressResponseDTO(
+                addresses.getStreet(),
+                addresses.getNumber(),
+                addresses.getComplement(),
+                addresses.getCity(),
+                addresses.getState(),
+                addresses.getCountry(),
+                addresses.getZipCode()
+        );
     }
 
 }

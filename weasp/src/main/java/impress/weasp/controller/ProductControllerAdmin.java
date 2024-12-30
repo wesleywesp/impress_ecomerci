@@ -2,7 +2,6 @@ package impress.weasp.controller;
 
 import impress.weasp.controller.dto.product.ProductRequestDto;
 import impress.weasp.controller.dto.product.ProductResponseDto;
-import impress.weasp.infra.security.JwtTokenProvider;
 import impress.weasp.model.Category;
 import impress.weasp.model.Product;
 import impress.weasp.service.CategoriaService;
@@ -13,8 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.stream.Collectors;
+
 
 @RestController
 @RequestMapping("/api/admin/products")
@@ -45,6 +43,7 @@ public class ProductControllerAdmin {
     }
     @PutMapping("/{id}")
     public ResponseEntity<ProductResponseDto> updateProduct(@PathVariable Long id, @RequestBody @Valid ProductRequestDto productDto) {
+
         Category category = categoryService.getCategoryBySlug(productDto.categorySlug());
         Product updatedProduct = Product.builder()
                 .name(productDto.name())

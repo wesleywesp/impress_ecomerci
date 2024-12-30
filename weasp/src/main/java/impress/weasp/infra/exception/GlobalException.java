@@ -7,6 +7,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 
 @ControllerAdvice
 public class GlobalException {
@@ -62,12 +64,11 @@ public class GlobalException {
         return new ResponseEntity<>(errorDetails, HttpStatus.BAD_REQUEST);
     }
     @ExceptionHandler(OrderException.class)
-    public ResponseEntity<ErrorDetails> OrderException(AutenficacaoException se, WebRequest request) {
-        ErrorDetails errorDetails = new ErrorDetails();
-        errorDetails.setDetails(request.getDescription(false));
-        errorDetails.setError(se.getMessage());
-        errorDetails.setTimestamp(java.time.LocalDateTime.now());
-        return new ResponseEntity<>(errorDetails, HttpStatus.BAD_REQUEST);
+    public ResponseEntity<Map<String, String>> handleOrderException(OrderException ex) {
+        Map<String, String> errorResponse = new HashMap<>();
+        errorResponse.put("error", ex.getMessage());
+        errorResponse.put("timestamp", LocalDateTime.now().toString());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
     @ExceptionHandler(AdminReportExecption.class)
     public ResponseEntity<ErrorDetails> SellreportExecption(AutenficacaoException se, WebRequest request) {

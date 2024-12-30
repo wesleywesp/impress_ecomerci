@@ -93,25 +93,35 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public Order updateOrderStatus(Long orderId, OrderStatus newStatus, Admin admin) {
+        log.info("Atualizando status do pedido. OrderId: {}, NewStatus: {}, Admin: {}", orderId, newStatus, admin.getEmail());
+
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new OrderException("Order not found"));
+                .orElseThrow(() -> {
+                    log.error("Pedido não encontrado. OrderId: {}", orderId);
+                    return new OrderException("Order not found");
+                });
 
         if (!admin.getRole().equals("ROLE_ADMIN")) {
+            log.error("Usuário não autorizado. Admin: {}", admin.getEmail());
             throw new OrderException("Only admins can update order status");
         }
 
-        // Validação de transições de estado
         if (order.getStatus() == OrderStatus.CANCELLED) {
+            log.error("Tentativa de atualizar pedido cancelado. OrderId: {}", orderId);
             throw new OrderException("Cannot update status of a cancelled order");
         }
 
         if (newStatus == OrderStatus.CANCELLED && order.getStatus() != OrderStatus.PENDING) {
+            log.error("Apenas pedidos pendentes podem ser cancelados. OrderId: {}, Status Atual: {}", orderId, order.getStatus());
             throw new OrderException("Only PENDING orders can be cancelled");
         }
 
         order.setStatus(newStatus);
+        log.info("Status do pedido atualizado com sucesso. OrderId: {}, NewStatus: {}", orderId, newStatus);
+
         return orderRepository.save(order);
     }
+
 
 
 

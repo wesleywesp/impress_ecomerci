@@ -57,9 +57,13 @@ public class CartController {
         Product product = productService.getProductById(request.productId());
 
         CartItem cartItem = cartService.addProductToCart(user, product, request.quantity());
+        cartItem.getCart().updateTotalAmount(); // Recalcula e persiste o total
+
         CartResponseDto response = mapToCartResponseDto(cartItem.getCart());
         return ResponseEntity.ok(response);
     }
+
+
 
     /**
      * Remove um item do carrinho do usuário logado.
@@ -107,6 +111,7 @@ public class CartController {
         return new CartResponseDto(cart.getId(), items, cart.getTotalAmount());
     }
 
+
     // Mapeia CartItem para CartItemResponseDto
     private CartItemResponseDto mapToCartItemResponseDto(CartItem cartItem) {
         return new CartItemResponseDto(
@@ -116,5 +121,6 @@ public class CartController {
                 cartItem.getPrice()
         );
     }
+
 }
 
